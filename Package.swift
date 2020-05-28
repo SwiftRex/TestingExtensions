@@ -12,7 +12,8 @@ let package = Package(
         .watchOS(.v6),
     ],
     products: [
-        .library(name: "TestingExtensions", type: .dynamic, targets: ["TestingExtensions"])
+        .library(name: "TestingExtensions", targets: ["TestingExtensions"]),
+        .library(name: "TestingExtensionsDynamic", type: .dynamic, targets: ["TestingExtensions"])
     ],
     dependencies: [
         .package(name: "SnapshotTesting", url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.7.2"),
