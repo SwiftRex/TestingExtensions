@@ -100,7 +100,15 @@ extension XCTestCase {
                     XCTFail("Action sent before handling \(middlewareResponses.count) pending effect(s)", file: file, line: line)
                 }
 
-                handle(action: action, state: &state, middleware: middleware, reducer: reducer)
+                var afterReducer: AfterReducer = .doNothing()
+                middleware.handle(
+                    action: action,
+                    from: .init(file: "\(file)", function: "", line: line, info: nil),
+                    afterReducer: &afterReducer
+                )
+                state = reducer.reduce(action, state)
+                afterReducer.reducerIsDone()
+
                 stateChange(&expected)
                 ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected)
             case let .receive(action, file, line, stateChange):
@@ -114,7 +122,15 @@ extension XCTestCase {
                 let first = middlewareResponses.removeFirst()
                 XCTAssertEqual(first, action, file: file, line: line)
 
-                handle(action: action, state: &state, middleware: middleware, reducer: reducer)
+                var afterReducer: AfterReducer = .doNothing()
+                middleware.handle(
+                    action: action,
+                    from: .init(file: "\(file)", function: "", line: line, info: nil),
+                    afterReducer: &afterReducer
+                )
+                state = reducer.reduce(action, state)
+                afterReducer.reducerIsDone()
+
                 stateChange(&expected)
                 ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected)
             case let .sideEffectResult(execute):
@@ -126,24 +142,6 @@ extension XCTestCase {
             let msg = "Assertion failed to handle \(middlewareResponses.count) pending effect(s)\n\(pendingActions)"
             XCTFail(msg, file: file, line: line)
         }
-    }
-
-    fileprivate func handle<M: Middleware>(
-        action: M.InputActionType,
-        state: inout M.StateType,
-        middleware: M,
-        reducer: Reducer<M.InputActionType, M.StateType>,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        var afterReducer: AfterReducer = .doNothing()
-        middleware.handle(
-            action: action,
-            from: .init(file: "\(file)", function: "", line: line, info: nil),
-            afterReducer: &afterReducer
-        )
-        state = reducer.reduce(action, state)
-        afterReducer.reducerIsDone()
     }
 
     private func ensureStateMutation<StateType>(
