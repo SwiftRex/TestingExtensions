@@ -13,10 +13,11 @@ import SwiftUI
 import XCTest
 
 open class SnapshotTestBase: XCTestCase {
-    override open class func setUp() {
+    public var allowAnimations: Bool = false
+
+    override open func setUp() {
         super.setUp()
-        // Keep this to easily toggle record mode:
-        // record = true
+        UIView.setAnimationsEnabled(allowAnimations)
     }
 
     open var defaultDevices: [(name: String, device: ViewImageConfig)] {
