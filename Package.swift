@@ -20,6 +20,6 @@ let package = Package(
         .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", from: "0.7.1")
     ],
     targets: [
-        .target(name: "TestingExtensions", dependencies: ["SnapshotTesting", .product(name: "CombineRexDynamic", package: "SwiftRex")])
+        .target(name: "TestingExtensions", dependencies: ["SnapshotTesting", .product(name: "CombineRex", package: "SwiftRex")])
     ]
 )
