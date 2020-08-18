@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "SnapshotTesting", url: "https://github.com/thedavidharris/swift-snapshot-testing.git", .revision("64c1925")),
-        .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", from: "0.7.1")
+        .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", .branch("develop"))
     ],
     targets: [
         .target(name: "TestingExtensions", dependencies: ["SnapshotTesting", .product(name: "CombineRexDynamic", package: "SwiftRex")])

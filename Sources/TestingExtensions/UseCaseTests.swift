@@ -37,7 +37,7 @@ extension XCTestCase {
         middleware: M,
         steps: Step<M.InputActionType, M.StateType>...,
         otherSteps: [Step<M.InputActionType, M.StateType>] = [],
-        file: StaticString = #file,
+        file: StaticString = #filePath,
         line: UInt = #line
     ) where M.InputActionType == M.OutputActionType, M.InputActionType: Equatable, M.StateType: Equatable {
         assert(
@@ -58,7 +58,7 @@ extension XCTestCase {
         steps: Step<M.InputActionType, M.StateType>...,
         otherSteps: [Step<M.InputActionType, M.StateType>] = [],
         stateEquating: (M.StateType, M.StateType) -> Bool,
-        file: StaticString = #file,
+        file: StaticString = #filePath,
         line: UInt = #line
     ) where M.InputActionType == M.OutputActionType, M.InputActionType: Equatable {
         assert(
@@ -78,7 +78,7 @@ extension XCTestCase {
         middleware: M,
         steps: [Step<M.InputActionType, M.StateType>],
         stateEquating: (M.StateType, M.StateType) -> Bool,
-        file: StaticString = #file,
+        file: StaticString = #filePath,
         line: UInt = #line
     ) where M.InputActionType == M.OutputActionType, M.InputActionType: Equatable {
         var state = initialValue
@@ -106,7 +106,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                state = reducer.reduce(action, state)
+                reducer.reduce(action, &state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
@@ -128,7 +128,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                state = reducer.reduce(action, state)
+                reducer.reduce(action, &state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
@@ -148,7 +148,7 @@ extension XCTestCase {
         equating: (StateType, StateType) -> Bool,
         statusQuo: StateType,
         expected: StateType,
-        file: StaticString = #file,
+        file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertTrue(
