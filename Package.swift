@@ -16,7 +16,7 @@ let package = Package(
         .library(name: "TestingExtensionsDynamic", type: .dynamic, targets: ["TestingExtensions"])
     ],
     dependencies: [
-        .package(name: "SnapshotTesting", url: "https://github.com/thedavidharris/swift-snapshot-testing.git", .revision("64c1925")),
+        .package(name: "SnapshotTesting", url: "https://github.com/thedavidharris/swift-snapshot-testing.git", .upToNextMajor(from: "1.8.2")),
         .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", from: "0.7.1")
     ],
     targets: [
