@@ -106,7 +106,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                reducer.reduce(action, &state)
+                state = reducer.reduce(action, state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
@@ -128,7 +128,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                reducer.reduce(action, &state)
+                state = reducer.reduce(action, state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
