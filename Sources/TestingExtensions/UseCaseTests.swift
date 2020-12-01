@@ -14,7 +14,7 @@ import XCTest
 
 public struct SendStep<ActionType, StateType> {
     public init(
-        action: ActionType,
+        action: @autoclosure @escaping () -> ActionType,
         file: StaticString = #file,
         line: UInt = #line,
         stateChange: @escaping (inout StateType) -> Void = { _ in }
@@ -25,7 +25,7 @@ public struct SendStep<ActionType, StateType> {
         self.stateChange = stateChange
     }
 
-    let action: ActionType
+    let action: () -> ActionType
     let file: StaticString
     let line: UInt
     let stateChange: (inout StateType) -> Void
@@ -42,13 +42,13 @@ public struct ReceiveStep<ActionType, StateType> {
         self.stateChange = stateChange
     }
 
-    public init(action: ActionType,
+    public init(action: @autoclosure @escaping () -> ActionType,
                 file: StaticString = #file,
                 line: UInt = #line,
                 stateChange: @escaping (inout StateType) -> Void = { _ in }
     ) where ActionType: Equatable {
         self.init(
-            isExpectedAction: { $0 == action },
+            isExpectedAction: { $0 == action() },
             file: file,
             line: line,
             stateChange: stateChange
@@ -145,12 +145,13 @@ extension XCTestCase {
                 }
 
                 var afterReducer: AfterReducer = .doNothing()
+                let action = step.action()
                 middleware.handle(
-                    action: step.action,
+                    action: action,
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                reducer.reduce(step.action, &state)
+                reducer.reduce(action, &state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
