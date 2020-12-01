@@ -131,10 +131,10 @@ extension XCTestCase {
         }
         middleware.receiveContext(getState: { state }, output: anyActionHandler)
 
-        steps.forEach { step in
+        steps.forEach { outerStep in
             var expected = state
 
-            switch step {
+            switch outerStep {
             case let .send(step)://action, file, line, stateChange):
                 let file = step.file
                 let line = step.line
@@ -155,7 +155,7 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected)
+                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep)
             case let .receive(step)://action, file, line, stateChange):
                 let file = step.file
                 let line = step.line
@@ -181,7 +181,7 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected)
+                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep)
             case let .sideEffectResult(execute):
                 execute()
             }
@@ -193,10 +193,11 @@ extension XCTestCase {
         }
     }
 
-    private func ensureStateMutation<StateType>(
+    private func ensureStateMutation<ActionType, StateType>(
         equating: (StateType, StateType) -> Bool,
         statusQuo: StateType,
         expected: StateType,
+        step: Step<ActionType, StateType>,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -208,7 +209,7 @@ extension XCTestCase {
                 dump(expected, to: &expectedString, name: nil, indent: 2)
                 let difference = diff(old: expectedString, new: stateString) ?? ""
 
-                return "Expected state different from current state\n\(difference)"
+                return "Expected state after step \(step) different from current state\n\(difference)"
             }(),
             file: file,
             line: line
