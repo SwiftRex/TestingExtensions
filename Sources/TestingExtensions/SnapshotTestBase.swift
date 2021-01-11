@@ -6,7 +6,7 @@
 //  Copyright © 2020 Lautsprecher Teufel GmbH. All rights reserved.
 //
 
-#if canImport(UIKit)
+#if canImport(UIKit) && canImport(XCTest)
 import Foundation
 import SnapshotTesting
 import SwiftUI

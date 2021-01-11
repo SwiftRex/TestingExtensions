@@ -6,6 +6,7 @@
 //  Copyright © 2020 Lautsprecher Teufel GmbH. All rights reserved.
 //
 
+#if canImport(XCTest)
 import Combine
 import CombineRex
 import Foundation
@@ -106,7 +107,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                state = reducer.reduce(action, state)
+                reducer.reduce(action, &state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
@@ -128,7 +129,7 @@ extension XCTestCase {
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
                     afterReducer: &afterReducer
                 )
-                state = reducer.reduce(action, state)
+                reducer.reduce(action, &state)
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
@@ -166,3 +167,4 @@ extension XCTestCase {
         )
     }
 }
+#endif
