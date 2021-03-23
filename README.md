@@ -33,7 +33,11 @@ assert(
             scheduler.advance(by: .seconds(5))
         }
 
-        Send(action: .anotherAction(.stopSomething))
+        Send(action: .anotherAction(.stopSomething)) { expectedStateChange in
+            // if during Send or Receive action, your state is expected to mutate, you must indicate which change is expected to happen here:
+            expectedStateChange.somePropertyShouldHaveChangedTo = true
+            // any unexpected state mutation will fail the test, as well as any expected state mutation that doesn't occur, will also fail the test
+        }
 
         SideEffectResult {
             scheduler.advance(by: .seconds(5))
@@ -48,6 +52,10 @@ assert(
             } else {
                 return false
             }
+        } stateChange: { expectedStateChange in
+            // if during Send or Receive action, your state is expected to mutate, you must indicate which change is expected to happen here:
+            expectedStateChange.somePropertyShouldHaveChangedTo = true
+            // any unexpected state mutation will fail the test, as well as any expected state mutation that doesn't occur, will also fail the test
         }
     }
 )
