@@ -10,13 +10,19 @@ import Combine
 import XCTest
 
 extension XCTestCase {
+
+    /// Assert for Combine Publishers
+    /// - Parameters:
+    ///   - publisher: subject-under-test
+    ///   - values: list of values expected to be delivered
+    ///   - andCompletes: whether we expect completion or not
+    /// - Returns: The operation with expectations. Hold this and by the end of your test case, call .wait giving the timeout
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func assert<P: Publisher>(
         publisher: P,
         eventuallyReceives values: P.Output...,
-        andCompletes: Bool = false,
-        timeout: TimeInterval
-    ) -> () -> Void where P.Output: Equatable {
+        andCompletes: Bool = false
+    ) -> Waiter where P.Output: Equatable {
         var collectedValues: [P.Output] = []
         let valuesExpectation = expectation(description: "Expected values")
         let completionExpectation = expectation(description: "Expected completion")
@@ -37,7 +43,7 @@ extension XCTestCase {
             }
         )
 
-        return { [weak self] in
+        return Waiter { [weak self] timeout in
             guard let self = self else {
                 XCTFail("Test ended before waiting for expectations")
                 return
@@ -48,13 +54,18 @@ extension XCTestCase {
         }
     }
 
+    /// Assert for Combine Publishers
+    /// - Parameters:
+    ///   - publisher: subject-under-test
+    ///   - values: list of values expected to be delivered
+    ///   - andCompletesWith: type of completion expected to happen (success, failure, an specific type of failure)
+    /// - Returns: The operation with expectations. Hold this and by the end of your test case, call .wait giving the timeout
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func assert<P: Publisher>(
         publisher: P,
         eventuallyReceives values: P.Output...,
-        andCompletesWith: ValidateCompletion<P.Failure>,
-        timeout: TimeInterval
-    ) -> () -> Void where P.Output: Equatable {
+        andCompletesWith: ValidateCompletion<P.Failure>
+    ) -> Waiter where P.Output: Equatable {
         var collectedValues: [P.Output] = []
         let valuesExpectation = expectation(description: "Expected values")
         let completionExpectation = expectation(description: "Expected completion")
@@ -70,7 +81,7 @@ extension XCTestCase {
             }
         )
 
-        return { [weak self] in
+        return Waiter { [weak self] timeout in
             guard let self = self else {
                 XCTFail("Test ended before waiting for expectations")
                 return
@@ -81,12 +92,16 @@ extension XCTestCase {
         }
     }
 
+    /// Assert for Combine Publishers
+    /// - Parameters:
+    ///   - publisher: subject-under-test
+    ///   - completesWithoutValues: type of completion expected to happen (success, failure, an specific type of failure)
+    /// - Returns: The operation with expectations. Hold this and by the end of your test case, call .wait giving the timeout
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func assert<P: Publisher>(
         publisher: P,
-        completesWithoutValues: ValidateCompletion<P.Failure>,
-        timeout: TimeInterval
-    ) -> () -> Void {
+        completesWithoutValues: ValidateCompletion<P.Failure>
+    ) -> Waiter {
         let completionExpectation = expectation(description: "Expected completion")
         let cancellable = publisher.sink(
             receiveCompletion: { result in
@@ -98,7 +113,7 @@ extension XCTestCase {
             }
         )
 
-        return { [weak self] in
+        return Waiter { [weak self] timeout in
             guard let self = self else {
                 XCTFail("Test ended before waiting for expectations")
                 return
@@ -109,6 +124,18 @@ extension XCTestCase {
     }
 }
 
+public struct Waiter {
+    let wait: (TimeInterval) -> Void
+
+    init(wait: @escaping (TimeInterval) -> Void) {
+        self.wait = wait
+    }
+
+    public func wait(timeout: TimeInterval) {
+        wait(timeout)
+    }
+}
+
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public struct ValidateCompletion<Failure: Error> {
     let isExpected: (Subscribers.Completion<Failure>) -> Bool
@@ -116,6 +143,7 @@ public struct ValidateCompletion<Failure: Error> {
         self.isExpected = validate
     }
 
+    /// Publisher should complete without errors
     public static var isSuccess: ValidateCompletion {
         ValidateCompletion { result in
             guard case .finished = result else { return false }
@@ -123,6 +151,7 @@ public struct ValidateCompletion<Failure: Error> {
         }
     }
 
+    /// Publisher should complete with error
     public static var isFailure: ValidateCompletion {
         ValidateCompletion { result in
             guard case .failure = result else { return false }
@@ -130,6 +159,7 @@ public struct ValidateCompletion<Failure: Error> {
         }
     }
 
+    /// Publisher should complete with an specific error, validate in the predicate (true means this is what you expect)
     public static func failedWithError(_ errorPredicate: @escaping (Failure) -> Bool) -> ValidateCompletion {
         ValidateCompletion { result in
             guard case let .failure(error) = result else { return false }
@@ -140,6 +170,7 @@ public struct ValidateCompletion<Failure: Error> {
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ValidateCompletion where Failure: Equatable {
+    /// Publisher should complete with an specific error, give the Equatable Failure type to compare against
     public static func failedWithError(_ expectedError: Failure) -> ValidateCompletion {
         ValidateCompletion { result in
             guard case let .failure(error) = result else { return false }
