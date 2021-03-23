@@ -71,6 +71,13 @@ public struct Send<ActionType, StateType>: StepProtocol {
     public var asStep: Step<ActionType, StateType> {
         .send(action: action(), file: file, line: line, stateChange: stateChange)
     }
+
+    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Send {
+        .init(action: action(), file: file, line: line, stateChange: { state in
+            self.stateChange(&state)
+            expectedMutation(&state)
+        })
+    }
 }
 
 public struct Receive<ActionType, StateType>: StepProtocol {
@@ -104,6 +111,13 @@ public struct Receive<ActionType, StateType>: StepProtocol {
 
     public var asStep: Step<ActionType, StateType> {
         .receive(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: stateChange)
+    }
+
+    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Receive {
+        .init(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: { state in
+            self.stateChange(&state)
+            expectedMutation(&state)
+        })
     }
 }
 
