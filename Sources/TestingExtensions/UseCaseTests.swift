@@ -13,7 +13,44 @@ import Foundation
 @testable import SwiftRex
 import XCTest
 
-public struct SendStep<ActionType, StateType> {
+@resultBuilder public struct StepBuilder<Action, State> {
+    public static func buildBlock(_ steps: Step<Action, State>...) -> [Step<Action, State>] {
+        steps
+    }
+
+    public static func buildEither(first component: [Step<Action, State>]) -> [Step<Action, State>] {
+        component
+    }
+
+    public static func buildEither(second component: [Step<Action, State>]) -> [Step<Action, State>] {
+        component
+    }
+
+    public static func buildLimitedAvailability(_ component: [Step<Action, State>]) -> [Step<Action, State>] {
+        component
+    }
+
+    public static func buildOptional(_ component: [Step<Action, State>]?) -> [Step<Action, State>] {
+        component ?? []
+    }
+
+    public static func buildArray(_ components: [[Step<Action, State>]]) -> [Step<Action, State>] {
+        components.flatMap { $0 }
+    }
+
+    public static func buildExpression<S: StepProtocol>(_ expression: S) -> Step<Action, State> where S.ActionType == Action, S.StateType == State {
+        expression.asStep
+    }
+}
+
+public protocol StepProtocol {
+    associatedtype ActionType
+    associatedtype StateType
+
+    var asStep: Step<ActionType, StateType> { get }
+}
+
+public struct Send<ActionType, StateType>: StepProtocol {
     public init(
         action: @autoclosure @escaping () -> ActionType,
         file: StaticString = #file,
@@ -30,9 +67,20 @@ public struct SendStep<ActionType, StateType> {
     let file: StaticString
     let line: UInt
     let stateChange: (inout StateType) -> Void
+
+    public var asStep: Step<ActionType, StateType> {
+        .send(action: action(), file: file, line: line, stateChange: stateChange)
+    }
+
+    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Send {
+        .init(action: action(), file: file, line: line, stateChange: { state in
+            self.stateChange(&state)
+            expectedMutation(&state)
+        })
+    }
 }
 
-public struct ReceiveStep<ActionType, StateType> {
+public struct Receive<ActionType, StateType>: StepProtocol {
     public init(isExpectedAction: @escaping (ActionType) -> Bool,
                 file: StaticString = #file,
                 line: UInt = #line,
@@ -59,16 +107,51 @@ public struct ReceiveStep<ActionType, StateType> {
     let file: StaticString
     let line: UInt
     let stateChange: (inout StateType) -> Void
-
     let isExpectedAction: (ActionType) -> Bool
+
+    public var asStep: Step<ActionType, StateType> {
+        .receive(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: stateChange)
+    }
+
+    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Receive {
+        .init(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: { state in
+            self.stateChange(&state)
+            expectedMutation(&state)
+        })
+    }
 }
 
-public enum Step<ActionType, StateType> {
-    case send(SendStep<ActionType, StateType>)
-    case receive(ReceiveStep<ActionType, StateType>)
+public struct SideEffectResult<ActionType, StateType>: StepProtocol {
+    public init(do perform: @escaping () -> Void) {
+        self.perform = perform
+    }
+    let perform: () -> Void
+
+    public var asStep: Step<ActionType, StateType> {
+        .sideEffectResult(do: perform)
+    }
+}
+
+public enum Step<ActionType, StateType>: StepProtocol {
+    case send(
+            action: @autoclosure () -> ActionType,
+            file: StaticString = #file,
+            line: UInt = #line,
+            stateChange: (inout StateType) -> Void = { _ in }
+         )
+    case receive(
+            isExpectedAction: (ActionType) -> Bool,
+            file: StaticString = #file,
+            line: UInt = #line,
+            stateChange: (inout StateType) -> Void = { _ in }
+         )
     case sideEffectResult(
         do: () -> Void
     )
+
+    public var asStep: Step<ActionType, StateType> {
+        self
+    }
 }
 
 extension XCTestCase {
@@ -76,8 +159,7 @@ extension XCTestCase {
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
-        steps: Step<M.InputActionType, M.StateType>...,
-        otherSteps: [Step<M.InputActionType, M.StateType>] = [],
+        @StepBuilder<M.InputActionType, M.StateType> steps: () -> [Step<M.InputActionType, M.StateType>],
         file: StaticString = #file,
         line: UInt = #line
     ) where M.InputActionType == M.OutputActionType, M.StateType: Equatable {
@@ -85,7 +167,7 @@ extension XCTestCase {
             initialValue: initialValue,
             reducer: reducer,
             middleware: middleware,
-            steps: steps + otherSteps,
+            steps: steps,
             stateEquating: ==,
             file: file,
             line: line
@@ -96,28 +178,7 @@ extension XCTestCase {
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
-        steps: Step<M.InputActionType, M.StateType>...,
-        otherSteps: [Step<M.InputActionType, M.StateType>] = [],
-        stateEquating: (M.StateType, M.StateType) -> Bool,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) where M.InputActionType == M.OutputActionType {
-        assert(
-            initialValue: initialValue,
-            reducer: reducer,
-            middleware: middleware,
-            steps: steps + otherSteps,
-            stateEquating: stateEquating,
-            file: file,
-            line: line
-        )
-    }
-
-    public func assert<M: Middleware>(
-        initialValue: M.StateType,
-        reducer: Reducer<M.InputActionType, M.StateType>,
-        middleware: M,
-        steps: [Step<M.InputActionType, M.StateType>],
+        @StepBuilder<M.InputActionType, M.StateType> steps: () -> [Step<M.InputActionType, M.StateType>],
         stateEquating: (M.StateType, M.StateType) -> Bool,
         file: StaticString = #file,
         line: UInt = #line
@@ -132,21 +193,17 @@ extension XCTestCase {
         }
         middleware.receiveContext(getState: { state }, output: anyActionHandler)
 
-        steps.forEach { outerStep in
+        steps().forEach { outerStep in
             var expected = state
 
             switch outerStep {
-            case let .send(step)://action, file, line, stateChange):
-                let file = step.file
-                let line = step.line
-                let stateChange = step.stateChange
-
+            case let .send(action, file, line, stateChange)://action, file, line, stateChange):
                 if !middlewareResponses.isEmpty {
                     XCTFail("Action sent before handling \(middlewareResponses.count) pending effect(s)", file: file, line: line)
                 }
 
                 var afterReducer: AfterReducer = .doNothing()
-                let action = step.action()
+                let action = action()
                 middleware.handle(
                     action: action,
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
@@ -157,11 +214,7 @@ extension XCTestCase {
 
                 stateChange(&expected)
                 ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep)
-            case let .receive(step)://action, file, line, stateChange):
-                let file = step.file
-                let line = step.line
-                let stateChange = step.stateChange
-
+            case let .receive(action, file, line, stateChange)://action, file, line, stateChange):
                 if middlewareResponses.isEmpty {
                     _ = XCTWaiter.wait(for: [gotAction], timeout: 0.2)
                 }
@@ -170,7 +223,7 @@ extension XCTestCase {
                     break
                 }
                 let first = middlewareResponses.removeFirst()
-                XCTAssertTrue(step.isExpectedAction(first), file: file, line: line)
+                XCTAssertTrue(action(first), file: file, line: line)
 
                 var afterReducer: AfterReducer = .doNothing()
                 middleware.handle(
@@ -208,9 +261,7 @@ extension XCTestCase {
                 var stateString: String = "", expectedString: String = ""
                 dump(statusQuo, to: &stateString, name: nil, indent: 2)
                 dump(expected, to: &expectedString, name: nil, indent: 2)
-                let difference = diff(old: expectedString, new: stateString) ?? ""
-
-                return "Expected state after step \(step) different from current state\n\(difference)"
+                return "Expected state after step \(step) different from current state\n\(expectedString)\n\(stateString)"
             }(),
             file: file,
             line: line
