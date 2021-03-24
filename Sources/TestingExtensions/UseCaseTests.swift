@@ -13,9 +13,10 @@ import Foundation
 @testable import SwiftRex
 import XCTest
 
+#if swift(>=5.4)
 @resultBuilder public struct StepBuilder<Action, State> {
-    public static func buildBlock(_ steps: Step<Action, State>...) -> [Step<Action, State>] {
-        steps
+    public static func buildBlock(_ steps: [Step<Action, State>]...) -> [Step<Action, State>] {
+        steps.flatMap { $0 }
     }
 
     public static func buildEither(first component: [Step<Action, State>]) -> [Step<Action, State>] {
@@ -38,10 +39,15 @@ import XCTest
         components.flatMap { $0 }
     }
 
-    public static func buildExpression<S: StepProtocol>(_ expression: S) -> Step<Action, State> where S.ActionType == Action, S.StateType == State {
-        expression.asStep
+    public static func buildExpression<S: StepProtocol>(_ expression: S) -> [Step<Action, State>] where S.ActionType == Action, S.StateType == State {
+        [expression.asStep]
+    }
+
+    public static func buildExpression(_ expression: [Step<Action, State>]...) -> [Step<Action, State>] {
+        expression.flatMap { $0 }
     }
 }
+#endif
 
 public protocol StepProtocol {
     associatedtype ActionType
@@ -155,6 +161,7 @@ public enum Step<ActionType, StateType>: StepProtocol {
 }
 
 extension XCTestCase {
+    #if swift(>=5.4)
     public func assert<M: Middleware>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
@@ -167,7 +174,7 @@ extension XCTestCase {
             initialValue: initialValue,
             reducer: reducer,
             middleware: middleware,
-            steps: steps,
+            stepsArray: steps(),
             stateEquating: ==,
             file: file,
             line: line
@@ -183,6 +190,66 @@ extension XCTestCase {
         file: StaticString = #file,
         line: UInt = #line
     ) where M.InputActionType == M.OutputActionType {
+        assert(
+            initialValue: initialValue,
+            reducer: reducer,
+            middleware: middleware,
+            stepsArray: steps(),
+            stateEquating: stateEquating,
+            file: file,
+            line: line
+        )
+    }
+    #endif
+
+    public func assert<M: Middleware>(
+        initialValue: M.StateType,
+        reducer: Reducer<M.InputActionType, M.StateType>,
+        middleware: M,
+        steps: Step<M.InputActionType, M.StateType>...,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) where M.InputActionType == M.OutputActionType, M.StateType: Equatable {
+        assert(
+            initialValue: initialValue,
+            reducer: reducer,
+            middleware: middleware,
+            stepsArray: steps,
+            stateEquating: ==,
+            file: file,
+            line: line
+        )
+    }
+
+    public func assert<M: Middleware>(
+        initialValue: M.StateType,
+        reducer: Reducer<M.InputActionType, M.StateType>,
+        middleware: M,
+        steps: Step<M.InputActionType, M.StateType>...,
+        stateEquating: (M.StateType, M.StateType) -> Bool,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) where M.InputActionType == M.OutputActionType {
+        assert(
+            initialValue: initialValue,
+            reducer: reducer,
+            middleware: middleware,
+            stepsArray: steps,
+            stateEquating: stateEquating,
+            file: file,
+            line: line
+        )
+    }
+
+    private func assert<M: Middleware>(
+        initialValue: M.StateType,
+        reducer: Reducer<M.InputActionType, M.StateType>,
+        middleware: M,
+        stepsArray: [Step<M.InputActionType, M.StateType>],
+        stateEquating: (M.StateType, M.StateType) -> Bool,
+        file: StaticString,
+        line: UInt
+    ) where M.InputActionType == M.OutputActionType {
         var state = initialValue
         var middlewareResponses: [M.OutputActionType] = []
         let gotAction = XCTestExpectation(description: "got action")
@@ -193,7 +260,7 @@ extension XCTestCase {
         }
         middleware.receiveContext(getState: { state }, output: anyActionHandler)
 
-        steps().forEach { outerStep in
+        stepsArray.forEach { outerStep in
             var expected = state
 
             switch outerStep {
