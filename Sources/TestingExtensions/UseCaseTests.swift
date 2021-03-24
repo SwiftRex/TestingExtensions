@@ -213,7 +213,7 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep)
+                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep, file: file, line: line)
             case let .receive(action, file, line, stateChange)://action, file, line, stateChange):
                 if middlewareResponses.isEmpty {
                     _ = XCTWaiter.wait(for: [gotAction], timeout: 0.2)
@@ -235,7 +235,7 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep)
+                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep, file: file, line: line)
             case let .sideEffectResult(execute):
                 execute()
             }
@@ -252,16 +252,19 @@ extension XCTestCase {
         statusQuo: StateType,
         expected: StateType,
         step: Step<ActionType, StateType>,
-        file: StaticString = #filePath,
-        line: UInt = #line
+        file: StaticString,
+        line: UInt
     ) {
         XCTAssertTrue(
             equating(statusQuo, expected),
             {
                 var stateString: String = "", expectedString: String = ""
+
                 dump(statusQuo, to: &stateString, name: nil, indent: 2)
                 dump(expected, to: &expectedString, name: nil, indent: 2)
-                return "Expected state after step \(step) different from current state\n\(expectedString)\n\(stateString)"
+
+                let difference = diff(old: expectedString, new: stateString) ?? ""
+                return "Expected state after step \(step) different from current state\n\(difference)"
             }(),
             file: file,
             line: line
