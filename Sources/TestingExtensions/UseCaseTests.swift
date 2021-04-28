@@ -254,8 +254,8 @@ extension XCTestCase {
         var middlewareResponses: [M.OutputActionType] = []
         let gotAction = XCTestExpectation(description: "got action")
         gotAction.assertForOverFulfill = false
-        let anyActionHandler = AnyActionHandler<M.OutputActionType>.init { (action, _) in
-            middlewareResponses.append(action)
+        let anyActionHandler = AnyActionHandler<M.OutputActionType>.init { dispatchedAction in
+            middlewareResponses.append(dispatchedAction.action)
             gotAction.fulfill()
         }
         middleware.receiveContext(getState: { state }, output: anyActionHandler)
