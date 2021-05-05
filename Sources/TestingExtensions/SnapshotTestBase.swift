@@ -32,20 +32,36 @@ open class SnapshotTestBase: XCTestCase {
     open func assertSnapshotDevices<V: View>(
         _ view: V,
         devices: [(name: String, device: ViewImageConfig)]? = nil,
+        style:  [UIUserInterfaceStyle] = [.unspecified],
         file: StaticString = #file,
         testName: String = #function,
         line: UInt = #line
     ) {
-        (devices ?? defaultDevices).forEach {
-            let vc = UIHostingController(rootView: view)
+        (devices ?? defaultDevices).forEach { config in
+            style.forEach { uiStyle in
+                let vc = UIHostingController(rootView: view)
+                vc.overrideUserInterfaceStyle = uiStyle
 
-            assertSnapshot(
-                matching: vc,
-                as: .image(on: $0.device),
-                file: file,
-                testName: "\(testName)-\($0.name)",
-                line: line
-            )
+                let suffix: String
+                switch uiStyle {
+                case .unspecified:
+                    suffix = ""
+                case .light:
+                    suffix = "-light"
+                case .dark:
+                    suffix = "-dark"
+                @unknown default:
+                    fatalError("Unhandled UIUserInterfaceStyle \(uiStyle)")
+                }
+
+                assertSnapshot(
+                    matching: vc,
+                    as: .image(on: config.device),
+                    file: file,
+                    testName: "\(testName)-\(config.name)\(suffix)",
+                    line: line
+                )
+            }
         }
     }
 }
