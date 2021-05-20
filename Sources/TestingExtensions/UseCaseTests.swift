@@ -266,7 +266,10 @@ extension XCTestCase {
             switch outerStep {
             case let .send(action, file, line, stateChange)://action, file, line, stateChange):
                 if !middlewareResponses.isEmpty {
-                    XCTFail("Action sent before handling \(middlewareResponses.count) pending effect(s)", file: file, line: line)
+                    XCTFail("""
+                            Action sent before handling \(middlewareResponses.count) pending effect(s):
+                            \(middlewareResponses.map { "\($0)" }.joined(separator: "\n"))
+                            """, file: file, line: line)
                 }
 
                 var afterReducer: AfterReducer = .doNothing()
