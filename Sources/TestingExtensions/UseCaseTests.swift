@@ -60,70 +60,123 @@ public struct Send<ActionType, StateType>: StepProtocol {
     public init(
         action: @autoclosure @escaping () -> ActionType,
         file: StaticString = #file,
+        fileForStateMutation: StaticString = #file,
         line: UInt = #line,
+        lineForStateMutation: UInt = #line,
         stateChange: @escaping (inout StateType) -> Void = { _ in }
     ) {
         self.action = action
         self.file = file
+        self.fileForStateMutation = fileForStateMutation
         self.line = line
+        self.lineForStateMutation = lineForStateMutation
         self.stateChange = stateChange
     }
 
     let action: () -> ActionType
     let file: StaticString
     let line: UInt
+    let fileForStateMutation: StaticString
+    let lineForStateMutation: UInt
     let stateChange: (inout StateType) -> Void
 
     public var asStep: Step<ActionType, StateType> {
-        .send(action: action(), file: file, line: line, stateChange: stateChange)
+        .send(
+            action: action(),
+            file: file,
+            fileForStateMutation: fileForStateMutation,
+            line: line,
+            lineForStateMutation: lineForStateMutation,
+            stateChange: stateChange
+        )
     }
 
-    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Send {
-        .init(action: action(), file: file, line: line, stateChange: { state in
+    public func expectStateToHaveChanged(
+        fileForStateMutation: StaticString = #file,
+        lineForStateMutation: UInt = #line,
+        _ expectedMutation: @escaping (inout StateType) -> Void = { _ in }
+    ) -> Send {
+        Send(
+            action: action(),
+            file: file,
+            fileForStateMutation: fileForStateMutation,
+            line: line,
+            lineForStateMutation: lineForStateMutation
+        ) { state in
             self.stateChange(&state)
             expectedMutation(&state)
-        })
+        }
     }
 }
 
 public struct Receive<ActionType, StateType>: StepProtocol {
-    public init(isExpectedAction: @escaping (ActionType) -> Bool,
-                file: StaticString = #file,
-                line: UInt = #line,
-                stateChange: @escaping (inout StateType) -> Void = { _ in }) {
+    public init(
+        isExpectedAction: @escaping (ActionType) -> Bool,
+        file: StaticString = #file,
+        fileForStateMutation: StaticString = #file,
+        line: UInt = #line,
+        lineForStateMutation: UInt = #line,
+        stateChange: @escaping (inout StateType) -> Void = { _ in }
+    ) {
         self.isExpectedAction = isExpectedAction
         self.file = file
+        self.fileForStateMutation = fileForStateMutation
         self.line = line
+        self.lineForStateMutation = lineForStateMutation
         self.stateChange = stateChange
     }
 
-    public init(action: @autoclosure @escaping () -> ActionType,
-                file: StaticString = #file,
-                line: UInt = #line,
-                stateChange: @escaping (inout StateType) -> Void = { _ in }
+    public init(
+        action: @autoclosure @escaping () -> ActionType,
+        file: StaticString = #file,
+        fileForStateMutation: StaticString = #file,
+        line: UInt = #line,
+        lineForStateMutation: UInt = #line,
+        stateChange: @escaping (inout StateType) -> Void = { _ in }
     ) where ActionType: Equatable {
         self.init(
             isExpectedAction: { $0 == action() },
             file: file,
+            fileForStateMutation: fileForStateMutation,
             line: line,
+            lineForStateMutation: lineForStateMutation,
             stateChange: stateChange
         )
     }
 
     let file: StaticString
     let line: UInt
+    let fileForStateMutation: StaticString
+    let lineForStateMutation: UInt
     let stateChange: (inout StateType) -> Void
     let isExpectedAction: (ActionType) -> Bool
 
     public var asStep: Step<ActionType, StateType> {
-        .receive(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: stateChange)
+        .receive(
+            isExpectedAction: isExpectedAction,
+            file: file,
+            fileForStateMutation: fileForStateMutation,
+            line: line,
+            lineForStateMutation: lineForStateMutation,
+            stateChange: stateChange
+        )
     }
 
-    public func expectStateToHaveChanged(_ expectedMutation: @escaping (inout StateType) -> Void = { _ in }) -> Receive {
-        .init(isExpectedAction: isExpectedAction, file: file, line: line, stateChange: { state in
+    public func expectStateToHaveChanged(
+        fileForStateMutation: StaticString = #file,
+        lineForStateMutation: UInt = #line,
+        _ expectedMutation: @escaping (inout StateType) -> Void = { _ in }
+    ) -> Receive {
+        Receive(
+            isExpectedAction: isExpectedAction,
+            file: file,
+            fileForStateMutation: fileForStateMutation,
+            line: line,
+            lineForStateMutation: lineForStateMutation
+        ) { state in
             self.stateChange(&state)
             expectedMutation(&state)
-        })
+        }
     }
 }
 
@@ -142,18 +195,22 @@ public enum Step<ActionType, StateType>: StepProtocol {
     case send(
             action: @autoclosure () -> ActionType,
             file: StaticString = #file,
+            fileForStateMutation: StaticString = #file,
             line: UInt = #line,
+            lineForStateMutation: UInt = #line,
             stateChange: (inout StateType) -> Void = { _ in }
          )
     case receive(
             isExpectedAction: (ActionType) -> Bool,
             file: StaticString = #file,
+            fileForStateMutation: StaticString = #file,
             line: UInt = #line,
+            lineForStateMutation: UInt = #line,
             stateChange: (inout StateType) -> Void = { _ in }
          )
     case sideEffectResult(
-        do: () -> Void
-    )
+            do: () -> Void
+         )
 
     public var asStep: Step<ActionType, StateType> {
         self
@@ -264,7 +321,7 @@ extension XCTestCase {
             var expected = state
 
             switch outerStep {
-            case let .send(action, file, line, stateChange)://action, file, line, stateChange):
+            case let .send(action, file, fileForStateMutation, line, lineForStateMutation, stateChange):
                 if !middlewareResponses.isEmpty {
                     XCTFail("""
                             Action sent before handling \(middlewareResponses.count) pending effect(s):
@@ -283,8 +340,15 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep, file: file, line: line)
-            case let .receive(action, file, line, stateChange)://action, file, line, stateChange):
+                ensureStateMutation(
+                    equating: stateEquating,
+                    statusQuo: state,
+                    expected: expected,
+                    step: outerStep,
+                    file: fileForStateMutation,
+                    line: lineForStateMutation
+                )
+            case let .receive(action, file, fileForStateMutation, line, lineForStateMutation, stateChange)://action, file, line, stateChange):
                 if middlewareResponses.isEmpty {
                     _ = XCTWaiter.wait(for: [gotAction], timeout: 0.2)
                 }
@@ -305,7 +369,14 @@ extension XCTestCase {
                 afterReducer.reducerIsDone()
 
                 stateChange(&expected)
-                ensureStateMutation(equating: stateEquating, statusQuo: state, expected: expected, step: outerStep, file: file, line: line)
+                ensureStateMutation(
+                    equating: stateEquating,
+                    statusQuo: state,
+                    expected: expected,
+                    step: outerStep,
+                    file: fileForStateMutation,
+                    line: lineForStateMutation
+                )
             case let .sideEffectResult(execute):
                 execute()
             }
