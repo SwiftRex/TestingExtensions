@@ -10,7 +10,7 @@
 import Combine
 import CombineRex
 import Foundation
-@testable import SwiftRex
+import SwiftRex
 import XCTest
 
 #if swift(>=5.4)
@@ -337,7 +337,11 @@ extension XCTestCase {
                     afterReducer: &afterReducer
                 )
                 reducer.reduce(action, &state)
-                afterReducer.reducerIsDone()
+                #if DEBUG
+                afterReducer.performBlock()
+                #else
+                XCTFail("Please run the tests in DEBUG otherwise after reducer won't be called")
+                #endif
 
                 stateChange(&expected)
                 ensureStateMutation(
@@ -366,7 +370,11 @@ extension XCTestCase {
                     afterReducer: &afterReducer
                 )
                 reducer.reduce(first, &state)
-                afterReducer.reducerIsDone()
+                #if DEBUG
+                afterReducer.performBlock()
+                #else
+                XCTFail("Please run the tests in DEBUG otherwise after reducer won't be called")
+                #endif
 
                 stateChange(&expected)
                 ensureStateMutation(
