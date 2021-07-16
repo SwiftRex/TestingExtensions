@@ -33,6 +33,7 @@ open class SnapshotTestBase: XCTestCase {
         _ view: V,
         devices: [(name: String, device: ViewImageConfig)]? = nil,
         style:  [UIUserInterfaceStyle] = [.unspecified],
+        imageDiffPrecision: Float = 1.0,
         file: StaticString = #file,
         testName: String = #function,
         line: UInt = #line
@@ -56,7 +57,7 @@ open class SnapshotTestBase: XCTestCase {
 
                 assertSnapshot(
                     matching: vc,
-                    as: .image(on: config.device),
+                    as: .image(on: config.device, precision: imageDiffPrecision),
                     file: file,
                     testName: "\(testName)-\(config.name)\(suffix)",
                     line: line
