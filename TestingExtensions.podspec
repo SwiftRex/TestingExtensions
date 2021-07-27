@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
     s.name             = 'TestingExtensions'
-    s.version          = '0.2.7'
+    s.version          = '0.2.8'
     s.summary          = 'Testing helpers and extensions for SwiftRex and Combine'
   
     s.homepage         = 'https://github.com/SwiftRex/TestingExtensions'
