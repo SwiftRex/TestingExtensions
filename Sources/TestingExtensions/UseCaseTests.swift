@@ -10,7 +10,7 @@
 import Combine
 import CombineRex
 import Foundation
-import SwiftRex
+@testable import SwiftRex
 import XCTest
 
 #if swift(>=5.4)
@@ -219,7 +219,7 @@ public enum Step<ActionType, StateType>: StepProtocol {
 
 extension XCTestCase {
     #if swift(>=5.4)
-    public func assert<M: Middleware>(
+    public func assert<M: MiddlewareProtocol>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
@@ -238,7 +238,7 @@ extension XCTestCase {
         )
     }
 
-    public func assert<M: Middleware>(
+    public func assert<M: MiddlewareProtocol>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
@@ -259,7 +259,7 @@ extension XCTestCase {
     }
     #endif
 
-    public func assert<M: Middleware>(
+    public func assert<M: MiddlewareProtocol>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
@@ -278,7 +278,7 @@ extension XCTestCase {
         )
     }
 
-    public func assert<M: Middleware>(
+    public func assert<M: MiddlewareProtocol>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
@@ -298,7 +298,7 @@ extension XCTestCase {
         )
     }
 
-    private func assert<M: Middleware>(
+    private func assert<M: MiddlewareProtocol>(
         initialValue: M.StateType,
         reducer: Reducer<M.InputActionType, M.StateType>,
         middleware: M,
@@ -329,16 +329,15 @@ extension XCTestCase {
                             """, file: file, line: line)
                 }
 
-                var afterReducer: AfterReducer = .doNothing()
                 let action = action()
-                middleware.handle(
+                let io = middleware.handle(
                     action: action,
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
-                    afterReducer: &afterReducer
+                    state: { state }
                 )
                 reducer.reduce(action, &state)
                 #if DEBUG
-                afterReducer.performBlock()
+                io.runIO(anyActionHandler)
                 #else
                 XCTFail("Please run the tests in DEBUG otherwise after reducer won't be called")
                 #endif
@@ -363,15 +362,14 @@ extension XCTestCase {
                 let first = middlewareResponses.removeFirst()
                 XCTAssertTrue(action(first), file: file, line: line)
 
-                var afterReducer: AfterReducer = .doNothing()
-                middleware.handle(
+                let io = middleware.handle(
                     action: first,
                     from: .init(file: "\(file)", function: "", line: line, info: nil),
-                    afterReducer: &afterReducer
+                    state: { state }
                 )
                 reducer.reduce(first, &state)
                 #if DEBUG
-                afterReducer.performBlock()
+                io.runIO(anyActionHandler)
                 #else
                 XCTFail("Please run the tests in DEBUG otherwise after reducer won't be called")
                 #endif
