@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
     s.name             = 'TestingExtensions'
-    s.version          = '0.2.8'
+    s.version          = '0.2.10'
     s.summary          = 'Testing helpers and extensions for SwiftRex and Combine'
   
     s.homepage         = 'https://github.com/SwiftRex/TestingExtensions'
@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   
     s.frameworks = 'XCTest', 'SwiftUI'
 
-    s.dependency 'SwiftRex', '~> 0.8.6'
-    s.dependency 'CombineRex', '~> 0.8.6'
+    s.dependency 'SwiftRex', '~> 0.8.8'
+    s.dependency 'CombineRex', '~> 0.8.8'
     s.dependency 'SnapshotTesting', '~> 1.8.2'
   end
