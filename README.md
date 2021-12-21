@@ -61,6 +61,45 @@ assert(
 )
 ```
 
+## Better diagnostics
+Result Builders (https://developer.apple.com/videos/play/wwdc2021/10253/) are awesome, however the diagnostics in case of type mismatch or failure to
+infer the type expression are misleading, incomplete or confusing. Although the Swift Core Team keeps improving the diagnostics every release, you may
+eventually find yourself in a compiler error that is tricky to understand. In that case, you may want to use the old format, that use plain arrays.
+
+```swift
+// Instead of:
+assert(
+    // ...
+    steps: {
+        Send(action: .certainAction(.verySpecific))
+
+        SideEffectResult {
+            scheduler.advance(by: .seconds(5))
+        }
+    }
+)
+
+// You can use:
+assert(
+    // ...
+    steps: [
+        Send(action: .certainAction(.verySpecific))
+            .asStep,
+            
+        SideEffectResult {
+            scheduler.advance(by: .seconds(5))
+        }.asStep
+    ]
+)
+```
+
+For that:
+- replace `steps: { }` curly-brackets for square-brackets `steps: []`
+- add `.asStep` after each step
+- add comma (,) after each step, except the last
+
+The syntax is not so elegant, but the diagnostics are better.
+
 ## Combine
 
 Validate Output of Publishers
