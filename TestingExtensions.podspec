@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
     s.homepage         = 'https://github.com/SwiftRex/TestingExtensions'
     s.license          = { :type => 'Apache', :text => '© 2021 Luiz Barbosa' }
     s.author           = { 'Luiz Barbosa' => 'swiftrex@developercity.de' }
-    s.source           = { :git => 'https://github.com/SwiftRex/TestingExtensions.git', :tag => "v#{s.version}" }
+    s.source           = { :git => 'https://github.com/SwiftRex/TestingExtensions.git', :tag => s.version.to_s }
   
     s.ios.deployment_target       = '13.0'
     s.osx.deployment_target       = '10.15'
