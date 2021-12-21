@@ -11,13 +11,13 @@ Pod::Spec.new do |s|
   
     s.ios.deployment_target       = '13.0'
     s.osx.deployment_target       = '10.15'
-    s.swift_version               = '5.3'  
+    s.swift_version               = '5.3'
   
     s.source_files = 'Sources/**/*.swift'
   
     s.frameworks = 'XCTest', 'SwiftUI'
 
-    s.dependency 'SwiftRex', '~> 0.8.8'
-    s.dependency 'CombineRex', '~> 0.8.8'
+    s.dependency 'SwiftRex', '~> 0.8.9'
+    s.dependency 'CombineRex', '~> 0.8.9'
     s.dependency 'SnapshotTesting', '~> 1.8.2'
   end
