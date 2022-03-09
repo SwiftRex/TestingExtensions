@@ -34,6 +34,7 @@ open class SnapshotTestBase: XCTestCase {
         devices: [(name: String, device: ViewImageConfig)]? = nil,
         style:  [UIUserInterfaceStyle] = [.unspecified],
         imageDiffPrecision: Float = 1.0,
+        subpixelThreshold: UInt8 = 0, // only available with https://github.com/pimms/swift-snapshot-testing
         file: StaticString = #file,
         testName: String = #function,
         line: UInt = #line
@@ -57,7 +58,7 @@ open class SnapshotTestBase: XCTestCase {
 
                 assertSnapshot(
                     matching: vc,
-                    as: .image(on: config.device, precision: imageDiffPrecision),
+                    as: .image(on: config.device, precision: imageDiffPrecision, subpixelThreshold: subpixelThreshold),
                     file: file,
                     testName: "\(testName)-\(config.name)\(suffix)",
                     line: line

@@ -16,14 +16,15 @@ let package = Package(
         .library(name: "TestingExtensionsDynamic", type: .dynamic, targets: ["TestingExtensions"])
     ],
     dependencies: [
-        .package(name: "SnapshotTesting", url: "https://github.com/pimms/swift-snapshot-testing.git", .branch("optimization")),
+        .package(url: "https://github.com/pimms/swift-snapshot-testing.git", .branch("optimization")),
         .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", .upToNextMajor(from: "0.8.9"))
     ],
     targets: [
         .target(
             name: "TestingExtensions",
             dependencies: [
-                "SnapshotTesting", .product(name: "CombineRexDynamic", package: "SwiftRex")
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+                .product(name: "CombineRexDynamic", package: "SwiftRex")
             ]
         )
     ]
