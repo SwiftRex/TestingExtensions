@@ -69,8 +69,8 @@ open class SnapshotTestBase: XCTestCase {
 
     /// Asserts that a given value matches a reference on disk. Adopted from
     /// https://github.com/pointfreeco/swift-snapshot-testing/discussions/553#discussioncomment-1862560
-    /// to make testing on Xcode-cloud possible. Depending on the CI environment variable, we point
-    /// the snapshot test to a different snapshotDirectoryUrl.
+    /// to make testing on Xcode-cloud possible. Depending on the CI / CI_PRIMARY_REPOSITORY_PATH environment
+    /// variables, we point snapshot test to a different snapshotDirectoryUrl.
     ///
     /// - Parameters:
     ///   - value: A value to compare against a reference.
@@ -92,7 +92,7 @@ open class SnapshotTestBase: XCTestCase {
       line: UInt = #line
       ) {
           let isCI = ProcessInfo.processInfo.environment["CI"] == "TRUE"
-          guard let srcRoot: String = ProcessInfo.processInfo.environment["SOURCE_ROOT"] else {
+          guard let srcRoot: String = ProcessInfo.processInfo.environment["CI_PRIMARY_REPOSITORY_PATH"] else {
               let failure = verifySnapshot(
                   matching: try value(),
                   as: snapshotting,
@@ -121,7 +121,7 @@ open class SnapshotTestBase: XCTestCase {
               if components.first == component {
                   components = Array(components.dropFirst())
               } else {
-                  XCTFail("Test file does not share a prefix path with SOURCE_ROOT")
+                  XCTFail("Test file does not share a prefix path with CI_PRIMARY_REPOSITORY_PATH")
                   return
               }
           }
