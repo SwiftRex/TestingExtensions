@@ -92,9 +92,22 @@ open class SnapshotTestBase: XCTestCase {
       line: UInt = #line
       ) {
           let isCI = ProcessInfo.processInfo.environment["CI"] == "TRUE"
-          let sourceRoot = URL(fileURLWithPath: ProcessInfo.processInfo.environment["SOURCE_ROOT"]!,
-                               isDirectory: true)
+          guard let srcRoot: String = ProcessInfo.processInfo.environment["SOURCE_ROOT"] else {
+              let failure = verifySnapshot(
+                  matching: try value(),
+                  as: snapshotting,
+                  named: name,
+                  record: recording,
+                  timeout: timeout,
+                  file: file,
+                  testName: testName
+              )
+              guard let message = failure else { return }
+              XCTFail(message, file: file, line: line)
+              return
+          }
 
+          let sourceRoot = URL(fileURLWithPath: srcRoot, isDirectory: true)
           let fileUrl = URL(fileURLWithPath: "\(file)", isDirectory: false)
           let fileName = fileUrl.deletingPathExtension().lastPathComponent
 
