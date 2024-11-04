@@ -22,8 +22,8 @@ open class SnapshotTestBase: XCTestCase {
 
     open var defaultDevices: [(name: String, device: ViewImageConfig)] {
         [
-            ("SE", .iPhoneSe),
-            ("X", .iPhoneX),
+            ("iPhone8", .iPhone8),
+            ("iPhone13proMax", .iPhone13ProMax),
             ("iPadMini", .iPadMini(.portrait) ),
             ("iPadPro", .iPadPro12_9(.portrait))
         ]
@@ -56,7 +56,7 @@ open class SnapshotTestBase: XCTestCase {
                 }
 
                 assertSnapshot(
-                    matching: vc,
+                    of: vc,
                     as: .image(on: config.device, precision: imageDiffPrecision),
                     file: file,
                     testName: "\(testName)-\(config.name)\(suffix)",
