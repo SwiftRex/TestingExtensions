@@ -51,18 +51,19 @@ open class SnapshotTestBase: XCTestCase {
                 let vc = UIHostingController(rootView: view)
                 vc.overrideUserInterfaceStyle = uiStyle
 
-                let suffix: String
-                switch uiStyle {
-                case .unspecified:
-                    suffix = ""
-                case .light:
-                    suffix = "-light"
-                case .dark:
-                    suffix = "-dark"
-                @unknown default:
-                    fatalError("Unhandled UIUserInterfaceStyle \(uiStyle)")
-                }
-
+                let suffix: String = {
+                    switch uiStyle {
+                    case .unspecified:
+                        return ""
+                    case .light:
+                        return "-light"
+                    case .dark:
+                        return "-dark"
+                    @unknown default:
+                        fatalError("Unhandled UIUserInterfaceStyle \(uiStyle)")
+                    }
+                }()
+                
                 assertSnapshot(
                     of: vc,
                     as: .image(on: config.device, precision: imageDiffPrecision),
