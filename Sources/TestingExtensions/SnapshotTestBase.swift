@@ -11,6 +11,7 @@ import Foundation
 import SnapshotTesting
 import SwiftUI
 import XCTest
+import AccessibilitySnapshot
 
 open class SnapshotTestBase: XCTestCase {
     public var allowAnimations: Bool = false
@@ -28,10 +29,17 @@ open class SnapshotTestBase: XCTestCase {
             ("iPadPro", .iPadPro12_9(.portrait))
         ]
     }
+    
+    open var accessibilityDevices: [(name: String, device: ViewImageConfig)] {
+        [
+            ("iPhone13pro", .iPhone13)
+        ]
+    }
 
     open func assertSnapshotDevices<V: View>(
         _ view: V,
         devices: [(name: String, device: ViewImageConfig)]? = nil,
+        accessibilityDevices: [(name: String, device: ViewImageConfig)]? = nil,
         style:  [UIUserInterfaceStyle] = [.unspecified],
         imageDiffPrecision: Float = 1.0,
         file: StaticString = #file,
@@ -63,6 +71,17 @@ open class SnapshotTestBase: XCTestCase {
                     line: line
                 )
             }
+        }
+        
+        (accessibilityDevices ?? self.accessibilityDevices).forEach { config in
+            let vc = UIHostingController(rootView: view)
+            assertSnapshot(
+                of: vc,
+                as: .accessibilityImage(showActivationPoints: .always),
+                file: file,
+                testName: "\(testName)-\(config.name)-accessibility",
+                line: line
+            )
         }
     }
 }
