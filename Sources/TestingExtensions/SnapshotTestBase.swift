@@ -110,11 +110,15 @@ open class SnapshotTestBase: XCTestCase {
         }()
         
         guard let a11ySnapshotDevices else { return }
+        
+        guard UIApplication.shared != nil else {
+            XCTFail("Accessibility snapshots must be run from a hosting application!")
+        }
+        
         a11ySnapshotDevices.forEach { config in
-            let vc = UIHostingController(rootView: view)
             assertSnapshot(
-                of: vc,
-                as: .accessibilityImage(showActivationPoints: .always),
+                of: view,
+                as: .accessibilityImage(showActivationPoints: .always, drawHierarchyInKeyWindow: true),
                 file: file,
                 testName: "\(testName)-\(config.name)-accessibility",
                 line: line
