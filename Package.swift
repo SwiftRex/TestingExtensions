@@ -17,14 +17,16 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "swift-snapshot-testing", url: "https://github.com/pointfreeco/swift-snapshot-testing.git", .upToNextMajor(from: "1.12.0")),
-        .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", .upToNextMajor(from: "0.8.12"))
+        .package(name: "SwiftRex", url: "https://github.com/SwiftRex/SwiftRex.git", .upToNextMajor(from: "0.8.12")),
+        .package(name: "AccessibilitySnapshot", url: "https://github.com/cashapp/AccessibilitySnapshot.git", from: "0.7.0"),
     ],
     targets: [
         .target(
             name: "TestingExtensions",
             dependencies: [
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
-                .product(name: "CombineRexDynamic", package: "SwiftRex")
+                .product(name: "CombineRexDynamic", package: "SwiftRex"),
+                .product(name: "AccessibilitySnapshot", package: "AccessibilitySnapshot")
             ]
         )
     ]
